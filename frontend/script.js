@@ -49,7 +49,7 @@ async function loadServices() {
             const body = await response.json()
             let message = 'Compra realizada com sucesso!'
             if (body.rewards?.length > 0) {
-                message += '\n\nParabén! Você ganhou as seguintes recompensas:'
+                message += '\n\nParabéns! Você ganhou as seguintes recompensas:'
                 for (const reward of body.rewards) message += `\n  - ${reward.name}`
             }
             alert(message)

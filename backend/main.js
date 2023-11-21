@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS rewards (
     reward_service INTEGER NOT NULL,
     ordered_service INTEGER,
     orders_to_get INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_reward_service FOREIGN KEY (reward_service) REFERENCES services (id),
     CONSTRAINT fk_ordered_service FOREIGN KEY (ordered_service) REFERENCES services (id)
 );`
@@ -105,6 +106,7 @@ async function checkReward(order) {
             FROM orders o1
             WHERE o1.card = ${order.card}
             AND o1.rewarded_from IS null
+            AND o1.created_at > r.created_at
             AND (r.ordered_service IS null OR o1.service = r.ordered_service)
             AND o1.id >
             (SELECT COALESCE(
@@ -158,7 +160,7 @@ app.get('/cards/:number', async (req, res) => {
 })
 
 app.get('/services', async (_, res) => {
-    const services = await sql`SELECT * FROM services`
+    const services = await sql`SELECT * FROM services ORDER BY name`
     res.json(services)
 })
 
@@ -184,11 +186,6 @@ app.post('/orders', async (req, res) => {
             : []
 
     return res.json({ ...order, rewards })
-})
-
-app.get('/', async (_, res) => {
-    const sla = await sql`SELECT * FROM services WHERE id IN ${sql([1, 2])}`
-    res.json(sla)
 })
 
 app.get('/cards/:number/balance', async (req, res) => {
@@ -239,9 +236,20 @@ app.patch('/cards/:number/rewards', async (req, res) => {
 
     const orders =
         await sql`SELECT min(id) id FROM orders WHERE card = ${card.id} AND service = ${serviceId} AND status = ${status.PENDENTE} AND rewarded_from IS NOT null`
-    const order = orders[0]
+    let order = orders[0]
 
-    if (order.id === null) return res.sendStatus(403)
+    if (order.id === null)
+        return res.status(403).json({ error: 'Você não possui essa recompensa!' })
+
+    order = (await sql`SELECT * FROM orders WHERE id = ${order.id}`)[0]
+
+    const today = new Date()
+    if (
+        order.created_at.getDate() === today.getDate() &&
+        order.created_at.getMonth() === today.getMonth() &&
+        order.created_at.getFullYear() === today.getFullYear()
+    )
+        return res.status(403).json({ error: 'Você só pode utilizar essa recompensa amanhã!' })
 
     await releaseOrder(order.id)
 

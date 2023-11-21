@@ -88,8 +88,12 @@ function loadRewards(rewards) {
                     serviceId: reward.id,
                 }),
             })
-            if (response.status !== 200) return alert('Erro ao usar recompensa.')
+            if (response.status !== 200 && response.status !== 403)
+                return alert('Erro ao usar recompensa.')
+
             const body = await response.json()
+            if (response.status === 403) return alert(body.error)
+
             loadRewards(body.rewards)
             alert('Recompensa utilizada!')
         }
