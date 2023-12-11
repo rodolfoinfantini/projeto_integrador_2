@@ -63,7 +63,7 @@ app.use(express.json())
 // Get just the purchased services, excluding the rewards
 async function cardBalance(card) {
     const balance = await sql`
-    SELECT s.id, s.name, COUNT(o.*) FROM orders o
+    SELECT s.id, s.name, COUNT(o.*) count FROM orders o
     INNER JOIN services s
     ON o.service = s.id
     INNER JOIN cards c
@@ -72,14 +72,14 @@ async function cardBalance(card) {
     AND o.status = ${status.PENDENTE}
     AND o.rewarded_from IS null
     GROUP BY s.id
-    ORDER BY s.id;`
+    ORDER BY count DESC;`
     return balance.map((service) => ({ ...service, count: parseInt(service.count) }))
 }
 
 // Get just the rewards
 async function cardRewards(card) {
     const rewards = await sql`
-    SELECT s.id, s.name, COUNT(o.*) FROM orders o
+    SELECT s.id, s.name, COUNT(o.*) count FROM orders o
     INNER JOIN services s
     ON o.service = s.id
     INNER JOIN cards c
@@ -88,7 +88,7 @@ async function cardRewards(card) {
     AND o.status = ${status.PENDENTE}
     AND o.rewarded_from IS NOT null
     GROUP BY s.id
-    ORDER BY s.id;`
+    ORDER BY count DESC;`
     return rewards.map((service) => ({ ...service, count: parseInt(service.count) }))
 }
 
@@ -257,6 +257,142 @@ app.patch('/cards/:number/rewards', async (req, res) => {
     const rewards = await cardRewards(number)
 
     res.json({ balance, rewards })
+})
+
+// Relatório do cliente
+async function orderedServices(cardNumber) {
+    return await sql`
+    select s.name service, o.created_at date
+    from orders o
+    inner join services s on s.id = o.service
+    inner join cards c on c.id = o.card
+    where c.card_number = ${cardNumber}
+    and o.rewarded_from is null
+    order by o.created_at desc;
+    `
+}
+async function releasedServices(cardNumber) {
+    return await sql`
+    select s.name service, o.released_at date
+    from orders o
+    inner join services s on s.id = o.service
+    inner join cards c on c.id = o.card
+    where c.card_number = ${cardNumber}
+    and o.status = 1
+    and o.rewarded_from is null
+    order by o.released_at desc;
+    `
+}
+async function earnedRewards(cardNumber) {
+    return await sql`
+    select s.name service, o.created_at date
+    from orders o
+    inner join services s on s.id = o.service
+    inner join cards c on c.id = o.card
+    where c.card_number = ${cardNumber}
+    and o.rewarded_from is not null
+    order by o.created_at desc;
+    `
+}
+async function releasedRewards(cardNumber) {
+    return await sql`
+    select s.name service, o.released_at date
+    from orders o
+    inner join services s on s.id = o.service
+    inner join cards c on c.id = o.card
+    where c.card_number = ${cardNumber}
+    and o.status = 1
+    and o.rewarded_from is not null
+    order by o.released_at desc;
+    `
+}
+app.get('/cards/:number/report', async (req, res) => {
+    const { number } = req.params
+
+    const cards = await sql`SELECT * FROM cards WHERE card_number = ${number}`
+    if (cards.length === 0) return res.sendStatus(404)
+
+    const ordered = await orderedServices(number)
+    const servicesReleased = await releasedServices(number)
+    const earned = await earnedRewards(number)
+    const rewardsReleased = await releasedRewards(number)
+
+    const balance = await cardBalance(number)
+    const rewards = await cardRewards(number)
+
+    res.json({
+        services: {
+            ordered,
+            released: servicesReleased,
+            balance,
+        },
+        rewards: {
+            earned,
+            released: rewardsReleased,
+            balance: rewards,
+        },
+    })
+})
+
+// Relatório do gerente
+async function servicesOrdered() {
+    return await sql`
+    select s.name service, count(o.*) count
+    from orders o
+    inner join services s on s.id = o.service
+    where o.rewarded_from is null
+    group by s.id
+    order by count desc;
+    `
+}
+async function servicesReleased() {
+    return await sql`
+    select s.name service, count(o.*) count
+    from orders o
+    inner join services s on s.id = o.service
+    where o.status = 1
+    and o.rewarded_from is null
+    group by s.id
+    order by count desc;
+    `
+}
+async function rewardsEarned() {
+    return await sql`
+    select s.name service, count(o.*) count
+    from orders o
+    inner join services s on s.id = o.service
+    where o.rewarded_from is not null
+    group by s.id
+    order by count desc;
+    `
+}
+async function servicesNotReleased() {
+    return await sql`
+    select s.name service, count(o.*) count
+    from orders o
+    inner join services s on s.id = o.service
+    where o.status = 0
+    and o.rewarded_from is null
+    group by s.id
+    order by count desc;
+    `
+}
+app.get('/report', async (_, res) => {
+    const ordered = await servicesOrdered()
+    const released = await servicesReleased()
+    const earned = await rewardsEarned()
+    const notReleased = await servicesNotReleased()
+
+    res.json({
+        services: {
+            ordered,
+            released,
+            notReleased,
+        },
+        rewards: {
+            earned,
+        },
+    })
 })
 
 app.listen(process.env.PORT, () => {

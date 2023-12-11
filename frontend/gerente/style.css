@@ -1,0 +1,63 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #ffffff;
+    color: #000000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 5px 20px;
+    align-items: center;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.services,
+.rewards {
+    padding: 20px;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    overflow-y: hidden;
+    max-width: 1300px;
+}
+
+.services > div,
+.rewards > div {
+    flex: 1 1 300px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 430px;
+    max-width: 500px;
+}
+
+h2 {
+    text-align: center;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.content p {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 5px;
+}
