@@ -151,7 +151,8 @@ app.post('/cards', async (_, res) => {
 })
 
 app.get('/cards/:number', async (req, res) => {
-    const { number } = req.params
+    let { number } = req.params
+    number = number.trim().replace(/\D/g, '')
 
     const cards = await sql`SELECT * FROM cards WHERE card_number = ${number}`
     if (cards.length === 0) return res.sendStatus(404)

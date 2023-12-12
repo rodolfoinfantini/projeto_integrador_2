@@ -32,6 +32,10 @@ header {
     padding: 10px 20px;
 }
 
+header img {
+    width: 80px;
+}
+
 header a.menu-btn {
     background-color: #007bff;
     border: 0;

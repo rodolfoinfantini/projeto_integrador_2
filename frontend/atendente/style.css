@@ -31,6 +31,10 @@ header {
     padding: 10px 20px;
 }
 
+header img {
+    width: 80px;
+}
+
 header a.create-card {
     background-color: #007bff;
     border: 0;
@@ -69,6 +73,7 @@ header a.create-card:hover {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    align-items: flex-start;
     gap: 20px;
     flex: 1;
     overflow-y: auto;

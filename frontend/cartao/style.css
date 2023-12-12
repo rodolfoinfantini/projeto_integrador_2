@@ -16,6 +16,11 @@ body {
     gap: 10px;
 }
 
+img {
+    width: 100px;
+    margin-bottom: 100px;
+}
+
 .create-card {
     background-color: #007bff;
     border: 0;
