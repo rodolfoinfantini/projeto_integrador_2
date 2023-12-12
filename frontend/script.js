@@ -41,7 +41,7 @@ async function loadServices() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    cardNumber,
+                    cardNumber: cardNumber,
                     serviceId: service.id,
                 }),
             })

@@ -1,11 +1,8 @@
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import postgres from 'postgres'
 
-dotenv.config()
-
-const sql = postgres(process.env.DATABASE_URL)
+const sql = postgres('postgres://postgres:root@localhost:5432/projetointegrador')
 
 await sql`
 CREATE TABLE IF NOT EXISTS cards (
@@ -137,6 +134,7 @@ async function cardExists(number) {
     return cards.length >= 1
 }
 
+// Criar cartão aleatório
 app.post('/cards', async (_, res) => {
     let newCardNumber = createCardNumber()
     while (await cardExists(newCardNumber)) {
@@ -150,6 +148,7 @@ app.post('/cards', async (_, res) => {
     })
 })
 
+// Verificar se um cartão é válido recuperando ele pelo número
 app.get('/cards/:number', async (req, res) => {
     let { number } = req.params
     number = +number.trim().replace(/\D/g, '')
@@ -160,11 +159,14 @@ app.get('/cards/:number', async (req, res) => {
     res.json(cards[0])
 })
 
+// Recuperar todos os serviços
 app.get('/services', async (_, res) => {
     const services = await sql`SELECT * FROM services ORDER BY name`
     res.json(services)
 })
 
+// Comprar um serviço
+// Recebendo número do cartão e id do serviço
 app.post('/orders', async (req, res) => {
     const { cardNumber, serviceId } = req.body
     if (!cardNumber || !serviceId) return res.sendStatus(400)
@@ -189,6 +191,7 @@ app.post('/orders', async (req, res) => {
     return res.json({ ...order, rewards })
 })
 
+// Recuperar saldo do cartão
 app.get('/cards/:number/balance', async (req, res) => {
     const { number } = req.params
 
@@ -205,6 +208,7 @@ async function releaseOrder(orderId) {
     await sql`UPDATE orders SET status = ${status.CONCLUIDO}, released_at = NOW() WHERE id = ${orderId}`
 }
 
+// Utilizar um serviço
 app.patch('/cards/:number/balance', async (req, res) => {
     const { serviceId } = req.body
     const { number } = req.params
@@ -227,6 +231,7 @@ app.patch('/cards/:number/balance', async (req, res) => {
     res.json({ balance, rewards })
 })
 
+// Utilizar uma recompensa
 app.patch('/cards/:number/rewards', async (req, res) => {
     const { serviceId } = req.body
     const { number } = req.params
@@ -307,6 +312,8 @@ async function releasedRewards(cardNumber) {
     order by o.released_at desc;
     `
 }
+
+// Gerar relatório de um cartão
 app.get('/cards/:number/report', async (req, res) => {
     const { number } = req.params
 
@@ -378,6 +385,8 @@ async function servicesNotReleased() {
     order by count desc;
     `
 }
+
+// Gerar relatório do gerente
 app.get('/report', async (_, res) => {
     const ordered = await servicesOrdered()
     const released = await servicesReleased()
@@ -396,6 +405,6 @@ app.get('/report', async (_, res) => {
     })
 })
 
-app.listen(process.env.PORT, () => {
+app.listen(3000, () => {
     console.log('Server running')
 })
