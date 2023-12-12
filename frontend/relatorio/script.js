@@ -51,7 +51,7 @@ function serviceDateParagraphs(list, container) {
         const date = new Date(item.date)
 
         serviceSpan.innerText = item.service
-        dateSpan.innerText = `${date.getDate()}/${date.getMonth()}/${date.getFullYear()}`
+        dateSpan.innerText = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
 
         p.appendChild(serviceSpan)
         p.appendChild(dateSpan)
